@@ -6,6 +6,7 @@ const allowedOrigins = new Set([
     "http://localhost:8000"
 ]);
 
+const MAX_BODY_BYTES = 16 * 1024;
 const RATE_LIMIT = 10;
 const RATE_WINDOW_MS = 60_000;
 const clientRequests = new Map();
@@ -106,13 +107,61 @@ const server = http.createServer((req, res) => {
         timestamps.push(now);
         clientRequests.set(ip, timestamps);
 
-        let body = "";
+        let chunks = [];
+        let bodyBytes = 0;
+        let bodyStopped = false;
 
         req.on("data", (chunk) => {
-            body += chunk;
+            if (bodyStopped) {
+                return;
+            }
+
+            bodyBytes += chunk.length;
+            if (bodyBytes > MAX_BODY_BYTES) {
+                bodyStopped = true;
+                chunks = [];
+                req.pause();
+                res.writeHead(413, {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Connection": "close"
+                });
+                res.end(JSON.stringify({
+                    error: "Förfrågan är för stor. Maximal storlek är 16 KiB."
+                }));
+                return;
+            }
+
+            chunks.push(chunk);
+        });
+
+        req.on("error", () => {
+            bodyStopped = true;
+            chunks = [];
+            if (!res.headersSent && !res.destroyed) {
+                res.writeHead(400, {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Connection": "close"
+                });
+                res.end(JSON.stringify({
+                    error: "Kunde inte läsa förfrågan."
+                }));
+            }
+        });
+
+        req.on("close", () => {
+            if (!req.complete) {
+                bodyStopped = true;
+                chunks = [];
+            }
         });
 
         req.on("end", async () => {
+            if (bodyStopped) {
+                return;
+            }
+
+            const body = Buffer.concat(chunks, bodyBytes).toString("utf8");
+            chunks = [];
             console.log("Mottagen data:", body);
             let data;
 
