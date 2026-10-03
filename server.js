@@ -89,8 +89,9 @@ const server = http.createServer((req, res) => {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.end("Hej från min backend!");
 });
-server.listen(3000, () => {
-    console.log("Servern kör på http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Servern kör på port ${PORT}`);
 
 
 });
