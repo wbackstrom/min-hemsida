@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="sv">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -198,6 +199,7 @@
         }
     </style>
 </head>
+
 <body>
     <main>
         <header>
@@ -242,7 +244,7 @@
             alert("Du har precis kört JavaScript! 🚀");
         }
 
-        document.getElementById("chat-form").addEventListener("submit", function (event) {
+        document.getElementById("chat-form").addEventListener("submit", async function (event) {
             event.preventDefault();
             const question = document.getElementById("chat-question");
 
@@ -252,9 +254,20 @@
                 return;
             }
 
-            document.getElementById("chat-answer").textContent =
-                "Tack för din fråga! Det här är en demo av gränssnittet. AI:n är inte ansluten ännu.";
+            const response = await fetch("http://localhost:3000/api/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    question: question.value
+                })
+            });
+            const data = await response.json();
+
+            document.getElementById("chat-answer").textContent = data.answer;
         });
     </script>
 </body>
+
 </html>
