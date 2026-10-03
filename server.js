@@ -49,6 +49,18 @@ const server = http.createServer((req, res) => {
 
                 return;
             }
+            if (data.question.length > 2000) {
+                res.writeHead(400, {
+                    "Content-Type": "application/json; charset=utf-8"
+                });
+
+                res.end(JSON.stringify({
+                    error: "Frågan är för lång. Du kan skriva högst 2000 tecken."
+                }));
+
+                return;
+            }
+
             if (data.previousResponseId !== undefined &&
                 (typeof data.previousResponseId !== "string" || !data.previousResponseId.trim())) {
                 res.writeHead(400, {
