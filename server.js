@@ -1,6 +1,13 @@
 const http = require("http");
 const net = require("net");
 
+const AI_TEACHER_INSTRUCTIONS = `Du är en pedagogisk AI-lärare inom programmering och AI.
+Svara på svenska och anpassa förklaringar till nybörjare.
+Förklara steg för steg och använd små konkreta exempel.
+Förklara varför något fungerar, inte bara vad användaren ska skriva.
+Om viktig information saknas, ställ en kort följdfråga.
+Var tydlig när du är osäker.`;
+
 const allowedOrigins = new Set([
     "https://wbackstrom.github.io",
     "http://localhost:8000"
@@ -224,6 +231,7 @@ const server = http.createServer((req, res) => {
                     },
                     body: JSON.stringify({
                         model: "gpt-6-luna",
+                        instructions: AI_TEACHER_INSTRUCTIONS,
                         input: data.question,
                         store: true,
                         previous_response_id: data.previousResponseId
