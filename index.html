@@ -250,6 +250,8 @@
             alert("Du har precis kört JavaScript! 🚀");
         }
 
+        let previousResponseId;
+
         document.getElementById("chat-form").addEventListener("submit", async function (event) {
             event.preventDefault();
             const question = document.getElementById("chat-question");
@@ -275,7 +277,8 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        question: question.value
+                        question: question.value,
+                        previousResponseId: previousResponseId
                     })
                 });
                 const data = await response.json();
@@ -285,6 +288,7 @@
                     return;
                 }
 
+                previousResponseId = data.responseId;
                 document.getElementById("chat-answer").textContent = data.answer;
             } catch (error) {
                 document.getElementById("chat-answer").textContent = "Kunde inte ansluta till servern.";

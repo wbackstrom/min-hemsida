@@ -49,6 +49,19 @@ const server = http.createServer((req, res) => {
 
                 return;
             }
+            if (data.previousResponseId !== undefined &&
+                (typeof data.previousResponseId !== "string" || !data.previousResponseId.trim())) {
+                res.writeHead(400, {
+                    "Content-Type": "application/json; charset=utf-8"
+                });
+
+                res.end(JSON.stringify({
+                    error: "Ogiltigt svar-ID"
+                }));
+
+                return;
+            }
+
             try {
                 const aiResponse = await fetch("https://api.openai.com/v1/responses", {
                     method: "POST",
@@ -58,7 +71,9 @@ const server = http.createServer((req, res) => {
                     },
                     body: JSON.stringify({
                         model: "gpt-6-luna",
-                        input: data.question
+                        input: data.question,
+                        store: true,
+                        previous_response_id: data.previousResponseId
                     })
                 });
 
@@ -76,7 +91,7 @@ const server = http.createServer((req, res) => {
                 }
 
                 res.setHeader("Content-Type", "application/json; charset=utf-8");
-                res.end(JSON.stringify({ answer: answer }));
+                res.end(JSON.stringify({ answer: answer, responseId: aiData.id }));
             } catch (error) {
                 console.error("Fel vid AI-anrop:", error.message);
 
