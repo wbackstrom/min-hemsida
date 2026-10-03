@@ -254,18 +254,27 @@
                 return;
             }
 
-            const response = await fetch("https://min-hemsida-fpk8.onrender.com/api/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    question: question.value
-                })
-            });
-            const data = await response.json();
+            try {
+                const response = await fetch("https://min-hemsida-fpk8.onrender.com/api/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        question: question.value
+                    })
+                });
+                const data = await response.json();
 
-            document.getElementById("chat-answer").textContent = data.answer;
+                if (!response.ok) {
+                    document.getElementById("chat-answer").textContent = data.error || "Något gick fel.";
+                    return;
+                }
+
+                document.getElementById("chat-answer").textContent = data.answer;
+            } catch (error) {
+                document.getElementById("chat-answer").textContent = "Kunde inte ansluta till servern.";
+            }
         });
     </script>
 </body>
