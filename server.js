@@ -64,9 +64,16 @@ const server = http.createServer((req, res) => {
 
                 const aiData = await aiResponse.json();
                 if (!aiResponse.ok) {
+                    console.error("OpenAI-fel:", aiResponse.status, aiData.error?.message);
                     throw new Error(`OpenAI svarade med ${aiResponse.status}`);
                 }
-                const answer = aiData.output[0].content[0].text;
+                const message = aiData.output.find((item) => item.type === "message");
+                const textContent = message?.content.find((item) => item.type === "output_text");
+                const answer = textContent?.text;
+
+                if (!answer) {
+                    throw new Error("AI-svaret innehöll ingen text");
+                }
 
                 res.setHeader("Content-Type", "application/json; charset=utf-8");
                 res.end(JSON.stringify({ answer: answer }));
