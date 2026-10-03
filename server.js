@@ -1,11 +1,39 @@
 const http = require("http");
+const net = require("net");
+
+const RATE_LIMIT = 10;
+const RATE_WINDOW_MS = 60_000;
+const clientRequests = new Map();
+
+function getClientIp(req) {
+    const address = process.env.RENDER === "true"
+        ? req.headers["cf-connecting-ip"]
+        : req.socket.remoteAddress;
+
+    if (typeof address !== "string" || !net.isIP(address)) {
+        return "unknown-client";
+    }
+
+    return net.isIP(address) === 6
+        ? new URL(`http://[${address}]/`).hostname.slice(1, -1)
+        : address;
+}
+
+setInterval(() => {
+    const cutoff = Date.now() - RATE_WINDOW_MS;
+    for (const [ip, timestamps] of clientRequests) {
+        const recent = timestamps.filter(timestamp => timestamp > cutoff);
+        if (recent.length === 0) {
+            clientRequests.delete(ip);
+        } else {
+            clientRequests.set(ip, recent);
+        }
+    }
+}, RATE_WINDOW_MS).unref();
 
 
 const server = http.createServer((req, res) => {
     console.log(req.method, req.url);
-
-    console.log("CF-Connecting-IP:", req.headers["cf-connecting-ip"]);
-    console.log("X-Forwarded-For:", req.headers["x-forwarded-for"]);
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -17,6 +45,26 @@ const server = http.createServer((req, res) => {
     }
 
     if (req.method === "POST" && req.url === "/api/chat") {
+        const ip = getClientIp(req);
+        const now = Date.now();
+        const timestamps = (clientRequests.get(ip) || [])
+            .filter(timestamp => timestamp > now - RATE_WINDOW_MS);
+
+        if (timestamps.length >= RATE_LIMIT) {
+            res.writeHead(429, {
+                "Content-Type": "application/json; charset=utf-8",
+                "Retry-After": String(Math.ceil((timestamps[0] + RATE_WINDOW_MS - now) / 1000))
+            });
+            res.end(JSON.stringify({
+                error: "Du har skickat för många frågor. Max 10 anrop per minut. Försök igen om en stund."
+            }));
+            req.resume();
+            return;
+        }
+
+        timestamps.push(now);
+        clientRequests.set(ip, timestamps);
+
         let body = "";
 
         req.on("data", (chunk) => {
