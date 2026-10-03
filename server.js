@@ -22,24 +22,65 @@ const server = http.createServer((req, res) => {
 
         req.on("end", async () => {
             console.log("Mottagen data:", body);
-            const data = JSON.parse(body);
-            const aiResponse = await fetch("https://api.openai.com/v1/responses", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: "gpt-6-luna",
-                    input: data.question
-                })
-            });
+            let data;
 
-            const aiData = await aiResponse.json();
-            const answer = aiData.output[0].content[0].text;
+            try {
+                data = JSON.parse(body);
+            } catch (error) {
+                res.writeHead(400, {
+                    "Content-Type": "application/json; charset=utf-8"
+                });
 
-            res.setHeader("Content-Type", "application/json; charset=utf-8");
-            res.end(JSON.stringify({ answer: answer }));
+                res.end(JSON.stringify({
+                    error: "Ogiltig JSON"
+                }));
+
+                return;
+            }
+
+            if (!data.question || !data.question.trim()) {
+                res.writeHead(400, {
+                    "Content-Type": "application/json; charset=utf-8"
+                });
+
+                res.end(JSON.stringify({
+                    error: "Frågan saknas"
+                }));
+
+                return;
+            }
+            try {
+                const aiResponse = await fetch("https://api.openai.com/v1/responses", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-6-luna",
+                        input: data.question
+                    })
+                });
+
+                const aiData = await aiResponse.json();
+                if (!aiResponse.ok) {
+                    throw new Error(`OpenAI svarade med ${aiResponse.status}`);
+                }
+                const answer = aiData.output[0].content[0].text;
+
+                res.setHeader("Content-Type", "application/json; charset=utf-8");
+                res.end(JSON.stringify({ answer: answer }));
+            } catch (error) {
+                console.error("Fel vid AI-anrop:", error.message);
+
+                res.writeHead(500, {
+                    "Content-Type": "application/json; charset=utf-8"
+                });
+
+                res.end(JSON.stringify({
+                    error: "Kunde inte hämta svar från AI"
+                }));
+            }
         });
 
         return;
