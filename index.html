@@ -89,6 +89,12 @@
             background: #183b2b;
         }
 
+        .chat-form button:disabled {
+            background: #53645c;
+            opacity: 0.7;
+            cursor: wait;
+        }
+
         button:focus-visible {
             outline: 3px solid #254f3d;
             outline-offset: 4px;
@@ -247,12 +253,20 @@
         document.getElementById("chat-form").addEventListener("submit", async function (event) {
             event.preventDefault();
             const question = document.getElementById("chat-question");
+            const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+
+            if (submitButton.disabled) {
+                return;
+            }
 
             if (!question.value.trim()) {
                 question.value = "";
                 question.reportValidity();
                 return;
             }
+
+            submitButton.disabled = true;
+            document.getElementById("chat-answer").textContent = "AI tänker";
 
             try {
                 const response = await fetch("https://min-hemsida-fpk8.onrender.com/api/chat", {
@@ -274,6 +288,8 @@
                 document.getElementById("chat-answer").textContent = data.answer;
             } catch (error) {
                 document.getElementById("chat-answer").textContent = "Kunde inte ansluta till servern.";
+            } finally {
+                submitButton.disabled = false;
             }
         });
     </script>
