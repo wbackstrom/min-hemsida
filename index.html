@@ -97,6 +97,57 @@
             margin-top: 48px;
         }
 
+        .chat {
+            margin-top: 48px;
+        }
+
+        .chat-card {
+            padding: 28px;
+            border: 1px solid #e2e4dc;
+            border-radius: 20px;
+            background: #fff;
+        }
+
+        .chat-form {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .chat-form label {
+            font-weight: 600;
+        }
+
+        .chat-form textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 14px 16px;
+            border: 1px solid #d8e3db;
+            border-radius: 12px;
+            background: #f5f4f0;
+            color: #202c29;
+            font: inherit;
+            resize: vertical;
+        }
+
+        .chat-form textarea:focus-visible {
+            outline: 3px solid #254f3d;
+            outline-offset: 3px;
+        }
+
+        .chat-answer {
+            margin-top: 24px;
+            padding: 16px;
+            border-radius: 12px;
+            background: #f0f3eb;
+            color: #53645c;
+        }
+
+        .chat-answer p {
+            margin: 8px 0 0;
+        }
+
         h2 {
             margin: 0 0 16px;
             font-size: 1.6rem;
@@ -169,12 +220,41 @@
             </div>
         </section>
 
+        <section class="chat" aria-labelledby="chat-heading">
+            <h2 id="chat-heading">Prata med min AI</h2>
+            <div class="chat-card">
+                <form class="chat-form" id="chat-form">
+                    <label for="chat-question">Din fråga</label>
+                    <textarea id="chat-question" name="question" placeholder="Vad vill du fråga?" required></textarea>
+                    <button type="submit">Skicka</button>
+                </form>
+                <div class="chat-answer" role="status" aria-live="polite" aria-atomic="true">
+                    <strong>Svar</strong>
+                    <p id="chat-answer">Här kommer svaret att visas. AI:n är inte ansluten ännu.</p>
+                </div>
+            </div>
+        </section>
+
         <footer>Byggt med nyfikenhet &amp; lite JavaScript.</footer>
     </main>
     <script>
         function visaMeddelande() {
             alert("Du har precis kört JavaScript! 🚀");
         }
+
+        document.getElementById("chat-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const question = document.getElementById("chat-question");
+
+            if (!question.value.trim()) {
+                question.value = "";
+                question.reportValidity();
+                return;
+            }
+
+            document.getElementById("chat-answer").textContent =
+                "Tack för din fråga! Det här är en demo av gränssnittet. AI:n är inte ansluten ännu.";
+        });
     </script>
 </body>
 </html>
