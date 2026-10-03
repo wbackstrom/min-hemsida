@@ -1,6 +1,11 @@
 const http = require("http");
 const net = require("net");
 
+const allowedOrigins = new Set([
+    "https://wbackstrom.github.io",
+    "http://localhost:8000"
+]);
+
 const RATE_LIMIT = 10;
 const RATE_WINDOW_MS = 60_000;
 const clientRequests = new Map();
@@ -35,10 +40,46 @@ setInterval(() => {
 const server = http.createServer((req, res) => {
     console.log(req.method, req.url);
 
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    const origin = req.headers.origin;
+    res.setHeader("Vary", "Origin");
+
+    if (origin !== undefined && allowedOrigins.has(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+
+    if (req.url === "/api/chat" && origin !== undefined && !allowedOrigins.has(origin)) {
+        res.writeHead(403, {
+            "Content-Type": "application/json; charset=utf-8"
+        });
+        res.end(JSON.stringify({
+            error: "Den här webbplatsen får inte använda chatten."
+        }));
+        req.resume();
+        return;
+    }
 
     if (req.method === "OPTIONS") {
+        if (req.url === "/api/chat" && origin !== undefined) {
+            res.setHeader("Vary", "Origin, Access-Control-Request-Method, Access-Control-Request-Headers");
+            const requestedMethod = req.headers["access-control-request-method"];
+            const requestedHeaders = req.headers["access-control-request-headers"];
+            const headersAllowed = requestedHeaders === undefined ||
+                (typeof requestedHeaders === "string" && requestedHeaders.split(",")
+                    .every(header => header.trim().toLowerCase() === "content-type"));
+
+            if (requestedMethod !== "POST" || !headersAllowed) {
+                res.writeHead(403, {
+                    "Content-Type": "application/json; charset=utf-8"
+                });
+                res.end(JSON.stringify({
+                    error: "Begärd metod eller header är inte tillåten för chatten."
+                }));
+                return;
+            }
+
+            res.setHeader("Access-Control-Allow-Methods", "POST");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        }
         res.writeHead(204);
         res.end();
         return;
