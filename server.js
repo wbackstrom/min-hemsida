@@ -4,6 +4,9 @@ const http = require("http");
 const server = http.createServer((req, res) => {
     console.log(req.method, req.url);
 
+    console.log("CF-Connecting-IP:", req.headers["cf-connecting-ip"]);
+    console.log("X-Forwarded-For:", req.headers["x-forwarded-for"]);
+
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
